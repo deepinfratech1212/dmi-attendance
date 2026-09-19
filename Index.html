@@ -1,1 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DMI Attendance QR Scanner</title>
 
+  <script src="https://unpkg.com/html5-qrcode"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 500px;
+      margin: auto;
+      padding: 20px;
+      text-align: center;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      margin-top: 15px;
+    }
+
+    #reader {
+      width: 100%;
+      margin-top: 20px;
+    }
+
+    #result {
+      margin-top: 20px;
+      padding: 15px;
+      text-align: left;
+      border-radius: 5px;
+    }
+
+    .success {
+      background: #e8f5e9;
+    }
+
+    .error {
+      background: #ffebee;
+    }
+  </style>
+</head>
+
+<body>
+
+<h2>DMI Attendance</h2>
+
+<button onclick="startScanner()" id="scanButton">
+  Scan QR
+</button>
+
+<div id="reader"></div>
+
+<div id="result">
+  Ready to scan
+</div>
+
+<script>
+
+let scanner = null;
+let scanned = false;
+
+function startScanner() {
+
+  scanned = false;
+
+  document.getElementById("result").innerHTML =
+    "Starting camera...";
+
+  Html5Qrcode.getCameras()
+    .then(function(cameras) {
+
+      if (!cameras || cameras.length === 0) {
+        showError("No camera found.");
+        return;
+      }
+
+      let cameraId = cameras[0].id;
+
+      for (let i = 0; i < cameras.length; i++) {
+
+        let label =
+          (cameras[i].label || "").toLowerCase();
+
+        if (
+          label.includes("back") ||
+          label.includes("rear") ||
+          label.includes("environment")
+        ) {
+          cameraId = cameras[i].id;
+          break;
+        }
+      }
+
+      scanner = new Html5Qrcode("reader");
+
+      scanner.start(
+        cameraId,
+        {
+          fps: 10,
+          qrbox: {
+            width: 250,
+            height: 250
+          }
+        },
+
+        function(decodedText) {
+
+          if (scanned) return;
+
+          scanned = true;
+
+          document.getElementById("result").className =
+            "success";
+
+          document.getElementById("result").innerHTML =
+            "<b>QR Successfully Scanned</b><br><br>" +
+            "QR ID: " + decodedText;
+
+          scanner.stop();
+
+        },
+
+        function(errorMessage) {
+          // QR not detected yet
+        }
+      )
+      .catch(function(error) {
+
+        showError(
+          "Camera error: " + error
+        );
+
+      });
+
+    })
+    .catch(function(error) {
+
+      showError(
+        "Camera permission error: " + error
+      );
+
+    });
+}
+
+
+function showError(message) {
+
+  document.getElementById("result").className =
+    "error";
+
+  document.getElementById("result").innerHTML =
+    "<b>" + message + "</b>";
+
+}
+
+</script>
+
+</body>
+</html>
